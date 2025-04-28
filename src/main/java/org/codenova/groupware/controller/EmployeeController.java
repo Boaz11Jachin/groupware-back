@@ -1,5 +1,6 @@
 package org.codenova.groupware.controller;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -79,7 +80,9 @@ public class EmployeeController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<Employee> loginHandle(@RequestParam String id, String password) {
+    public ResponseEntity<Employee> loginHandle(@RequestParam String id,
+                                                @RequestParam String password,
+                                                HttpSession session) {
 
         Optional<Employee> employee = employeeRepository.findById(id);
         if (employee.isEmpty()) {
@@ -89,12 +92,16 @@ public class EmployeeController {
         if (employee.isPresent()) {
             String BCrypted = employee.get().getPassword();
             if (BCrypt.checkpw(password, BCrypted)) {
-                return ResponseEntity.status(200).body(null);
+
+                session.setAttribute("user", employee);
+                return ResponseEntity.status(200).body(employee.get());
+
+            }else {
+                return ResponseEntity.status(401).body(null);
             }
         }
 
-
-        return null;
+        return ResponseEntity.status(401).body(null);
     }
 
 
