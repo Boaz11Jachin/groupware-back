@@ -12,11 +12,13 @@ import org.codenova.groupware.repository.DepartmentRepository;
 import org.codenova.groupware.repository.EmployeeRepository;
 import org.codenova.groupware.repository.SerialRepository;
 import org.codenova.groupware.request.AddEmployee;
+import org.codenova.groupware.request.Login;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -30,16 +32,23 @@ public class EmployeeController {
     private final DepartmentRepository departmentRepository;
     private final SerialRepository serialRepository;
 
+    @GetMapping
+    public ResponseEntity<List<Employee>> getEmployeeHandle(){
+        List<Employee> list = employeeRepository.findAll();
+        return ResponseEntity.status(200).body(list);
+    }
+
+
     @PostMapping
     @Transactional
-    public ResponseEntity<Employee> postEmployeeHandle(@ModelAttribute @Valid AddEmployee addEmployee,
+    public ResponseEntity<Employee> postEmployeeHandle(@RequestBody @Valid AddEmployee addEmployee,
                                                        BindingResult result) {
         if (result.hasErrors()) {
             return ResponseEntity.status(400).body(null);  // bad request : 서버가 클라이언트 오류를 감지해 요청을 처리할 수 없는 코드
         }
 
         // 1. 사원번호 생성, 부서 객체
-        Optional<Serial> serial = serialRepository.findById(1); // JPA에서 id 로 찾는 걸 기본 제공해주는데, 결과가 Optional 객체가 나옴.
+        Optional<Serial> serial = serialRepository.findByRef("employee"); // JPA에서 id 로 찾는 걸 기본 제공해주는데, 결과가 Optional 객체가 나옴.
         // 정석적으로 사용한다면 serial.isPresent()  이런걸 확인해서 뽑아서 써야됨.
         Serial found = serial.get();    // 바로 뽑는 이유는 '100% 있는걸 알아서'
 
@@ -68,6 +77,46 @@ public class EmployeeController {
         return ResponseEntity.status(201).body(employee);   // created : 요청이 성공적으로 처리되었으며, 자원이 생성되었음을 나타내는 성공 상태 응답 코드
     }
 
+//    @PostMapping("/verify")
+//    public ResponseEntity<?> verifyHandle(@RequestParam String id,
+//                                          @RequestParam String password,
+//                                          HttpSession session) {
+//
+//        Optional<Employee> employee = employeeRepository.findById(id);
+//        if (employee.isEmpty()) {
+//            return ResponseEntity.status(401).body(null);
+//        }
+//
+//        if (employee.isPresent()) {
+//            String BCrypted = employee.get().getPassword();
+//            if (BCrypt.checkpw(password, BCrypted)) {
+//
+//                session.setAttribute("user", employee);
+//                return ResponseEntity.status(200).body(employee.get());
+//
+//            }else {
+//                return ResponseEntity.status(401).body(null);
+//            }
+//        }
+//
+//        return ResponseEntity.status(401).body(null);
+//    }
+    // 습작
+
+    @PostMapping("/verify")
+    public ResponseEntity<?> verifyHandle (@RequestBody @Valid Login login,BindingResult result){
+        if (result.hasErrors()){
+            return ResponseEntity.status(400).body(null);
+        }
+        Optional<Employee> employee = employeeRepository.findById(login.getId());
+        if(employee.isEmpty() || !BCrypt.checkpw(login.getPassword(), employee.get().getPassword())){
+            return ResponseEntity.status(401).body(null);
+        }
+        return ResponseEntity.status(200).body(employee.get());
+    }
+
+
+
     @GetMapping("/{id}")
     public ResponseEntity<Employee> getEmployeeDetailHandle(@PathVariable String id) {
 
@@ -79,30 +128,7 @@ public class EmployeeController {
 
     }
 
-    @PostMapping("/verify")
-    public ResponseEntity<Employee> loginHandle(@RequestParam String id,
-                                                @RequestParam String password,
-                                                HttpSession session) {
 
-        Optional<Employee> employee = employeeRepository.findById(id);
-        if (employee.isEmpty()) {
-            return ResponseEntity.status(401).body(null);
-        }
-
-        if (employee.isPresent()) {
-            String BCrypted = employee.get().getPassword();
-            if (BCrypt.checkpw(password, BCrypted)) {
-
-                session.setAttribute("user", employee);
-                return ResponseEntity.status(200).body(employee.get());
-
-            }else {
-                return ResponseEntity.status(401).body(null);
-            }
-        }
-
-        return ResponseEntity.status(401).body(null);
-    }
 
 
 }

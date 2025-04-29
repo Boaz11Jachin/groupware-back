@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @CrossOrigin
-@RestController // <- 이걸로하면 Responsebody 안붙여도 된다 (????)
+@RestController // <- 이걸로하면 ResponseBody 안붙여도 된다 (????)
 @RequestMapping("/api/department")
 @RequiredArgsConstructor // <- final 붙은 애들만 주입함 (올아그도 가능)
 public class DepartmentController {
