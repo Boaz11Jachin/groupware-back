@@ -30,11 +30,12 @@ public class PrivateController {
     // 우리나라 개발자들은 보통은 put으로 처리를 하는 경우가 많음.
     @PutMapping("/change-password")
     public ResponseEntity<?> patchChangePasswordHandle(
-            @RequestAttribute("employeeId") String subject,
+            @RequestAttribute("subject") String subject,
             @RequestBody @Valid ChangePassword changePassword, BindingResult bindResult) {
-
+        System.out.println(bindResult);
         // if 바인딩리절트 에러 있으면 400번 응답
         if(bindResult.hasErrors()) {
+
             return ResponseEntity.status(400).body(null);
         }
 
