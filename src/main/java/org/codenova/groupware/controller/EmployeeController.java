@@ -1,5 +1,7 @@
 package org.codenova.groupware.controller;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -13,11 +15,13 @@ import org.codenova.groupware.repository.EmployeeRepository;
 import org.codenova.groupware.repository.SerialRepository;
 import org.codenova.groupware.request.AddEmployee;
 import org.codenova.groupware.request.Login;
+import org.codenova.groupware.response.LoginResult;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,7 +37,7 @@ public class EmployeeController {
     private final SerialRepository serialRepository;
 
     @GetMapping
-    public ResponseEntity<List<Employee>> getEmployeeHandle(){
+    public ResponseEntity<List<Employee>> getEmployeeHandle() {
         List<Employee> list = employeeRepository.findAll();
         return ResponseEntity.status(200).body(list);
     }
@@ -104,17 +108,27 @@ public class EmployeeController {
     // 습작
 
     @PostMapping("/verify")
-    public ResponseEntity<?> verifyHandle (@RequestBody @Valid Login login,BindingResult result){
-        if (result.hasErrors()){
+    public ResponseEntity<LoginResult> verifyHandle(@RequestBody @Valid Login login, BindingResult result) {
+        if (result.hasErrors()) {
             return ResponseEntity.status(400).body(null);
         }
         Optional<Employee> employee = employeeRepository.findById(login.getId());
-        if(employee.isEmpty() || !BCrypt.checkpw(login.getPassword(), employee.get().getPassword())){
+        if (employee.isEmpty() || !BCrypt.checkpw(login.getPassword(), employee.get().getPassword())) {
             return ResponseEntity.status(401).body(null);
         }
-        return ResponseEntity.status(200).body(employee.get());
-    }
 
+        String token =
+                JWT.create().withIssuer("groupware")
+                        .withSubject(employee.get().getId()).sign(Algorithm.HMAC256("groupware"));
+
+        LoginResult loginResult = LoginResult.builder()
+                .token(token)
+                .employee(employee.get())
+                .build();
+
+
+        return ResponseEntity.status(200).body(loginResult);
+    }
 
 
     @GetMapping("/{id}")
@@ -127,8 +141,6 @@ public class EmployeeController {
         return ResponseEntity.status(200).body(employee.get());
 
     }
-
-
 
 
 }
