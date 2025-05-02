@@ -1,19 +1,20 @@
 package org.codenova.groupware.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Setter
 @Getter
-public class WriteBoard {
-
-    @NotNull
-    private String writer;
+public class AddNote {
 
     @NotBlank
-    private String title;
-
     private String content;
+
+    @NotEmpty
+    private List<String> receiverIds;
 }

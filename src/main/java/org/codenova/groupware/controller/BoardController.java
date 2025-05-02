@@ -6,6 +6,7 @@ import org.codenova.groupware.entity.Board;
 import org.codenova.groupware.repository.BoardRepository;
 import org.codenova.groupware.repository.EmployeeRepository;
 import org.codenova.groupware.request.WriteBoard;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,7 +41,7 @@ public class BoardController {
 
     @GetMapping
     public ResponseEntity<List<Board>> getBoardHandle() {
-        List<Board> list = boardRepository.findAll();
+        List<Board> list = boardRepository.findAll(Sort.by("id").descending());
         return ResponseEntity.status(200).body(list);
     }
 
