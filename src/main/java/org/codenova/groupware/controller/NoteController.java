@@ -31,16 +31,16 @@ public class NoteController {
     private final NoteStatusRepository noteStatusRepository;
 
     @PostMapping
-    public ResponseEntity<?> messageHandle(@RequestBody @Valid AddNote addNote, BindingResult bindingResult,
-                                           @RequestAttribute String subject) {
+    public ResponseEntity<?> createNote(@RequestBody @Valid AddNote addNote, BindingResult bindingResult,
+                                        @RequestAttribute String subject) {
 
-        if(bindingResult.hasErrors()) {
+        if (bindingResult.hasErrors()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "인자누락(내용 필수, 최소1명이상 수신사 설정 필수)");
         }
         // Note Save
-        Employee subjectEmployee = employeeRepository.findById(subject).orElseThrow( ()-> {
+        Employee subjectEmployee = employeeRepository.findById(subject).orElseThrow(() -> {
 
-            return  new ResponseStatusException(HttpStatus.UNAUTHORIZED, "미인증 사원");
+            return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "미인증 사원");
         });
 
     /* my ->
@@ -63,7 +63,7 @@ public class NoteController {
         }
          <- my
     */
-        Note note= Note.builder().content(addNote.getContent())
+        Note note = Note.builder().content(addNote.getContent())
                 .sendAt(LocalDateTime.now()).isDelete(false).sender(subjectEmployee).build();
         noteRepository.save(note);  // 새 쪽지는 저장이 됬고,
 
@@ -97,7 +97,7 @@ public class NoteController {
         noteStatusRepository.saveAll(noteStatusList);
          */
 
-        List<NoteStatus> noteStatus = receivers.stream().map((employee)-> {
+        List<NoteStatus> noteStatus = receivers.stream().map((employee) -> {
             return NoteStatus.builder().note(note).isRead(false).isDelete(false).receiver(employee).build();
         }).toList();
         noteStatusRepository.saveAll(noteStatus);
@@ -106,10 +106,10 @@ public class NoteController {
     }
 
 
-    @GetMapping("/receive")
+    @GetMapping("/inbox")
     public ResponseEntity<?> getReceiveNote(@RequestAttribute String subject) {
         // noteStatus 들중에 receiver 가 현재 로그인하고 있는 사용자로 되어있는 데이터만 가져와야함.
-        Employee subjectEmployee = employeeRepository.findById(subject).orElseThrow(()-> new ResponseStatusException(HttpStatus.UNAUTHORIZED,"미인증 상태"));
+        Employee subjectEmployee = employeeRepository.findById(subject).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "미인증 상태"));
 //        NoteStatus example = NoteStatus.builder().receiver(subjectEmployee).build();
 //        List<NoteStatus> noteStatusList =noteStatusRepository.findAll(Example.of(example));
 
@@ -118,4 +118,46 @@ public class NoteController {
 
     }
 
+    @GetMapping("/outbox")
+    public ResponseEntity<?> getSendNote(@RequestAttribute String subject) {
+        // note 리포지토리에서 이 요청을 보낸 사용자가 쓴 note 를 가지고 와야 한다.
+        Employee subjectEmployee = employeeRepository.findById(subject)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."));
+
+        /*
+            Optional<Employee> optionalSubject = employeeRepository.findById(subject);
+            if(optionalSubject.isEmpty() ) {
+               throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+            }
+            Employee subjectEmployee = optionalSubject.get();
+         */
+
+        List<Note> sendNotes = noteRepository.findAllBySender(subjectEmployee);
+
+        List<NoteStatus> sendNoteStatus =
+                noteStatusRepository.findAllByNoteIn(sendNotes);
+
+
+        return ResponseEntity.status(200).body(sendNoteStatus);
+    }
+
+    @PutMapping("/status/{id}")
+    public ResponseEntity<?> putStatusHandle(@RequestAttribute String subject, @PathVariable Long id) {
+        Optional<NoteStatus> optionalNoteStatus = noteStatusRepository.findById(id);
+        if (optionalNoteStatus.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "잘못된 id 값이 전달.");
+        }
+        NoteStatus noteStatus = optionalNoteStatus.get();
+        // 리시버가 요청을 사용자가 아니면,,? 이건 권한 없음
+        if (!noteStatus.getReceiver().getId().equals(subject)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "자신이 받은 쪽지만 상태 변경 가능.");
+        }
+        if (!noteStatus.getIsRead()) {
+            noteStatus.setIsRead(true);
+            noteStatus.setReadAt(LocalDateTime.now());
+            noteStatusRepository.save(noteStatus);
+        }
+
+        return ResponseEntity.status(200).body(noteStatus);
+    }
 }
