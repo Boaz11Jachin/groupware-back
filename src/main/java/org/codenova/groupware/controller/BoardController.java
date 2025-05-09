@@ -8,6 +8,7 @@ import org.codenova.groupware.repository.EmployeeRepository;
 import org.codenova.groupware.request.WriteBoard;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ public class BoardController {
 
     private final BoardRepository boardRepository;
     private final EmployeeRepository employeeRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @PostMapping
     public ResponseEntity<Board> registerHandle(@RequestBody WriteBoard board) {
@@ -34,6 +36,7 @@ public class BoardController {
                 .wroteAt(LocalDateTime.now()).build();
 
         boardRepository.save(post);
+        messagingTemplate.convertAndSend("/public", "새글이 등록되었습니다.");
 
         return ResponseEntity.status(203).body(post);
 
@@ -42,6 +45,7 @@ public class BoardController {
     @GetMapping
     public ResponseEntity<List<Board>> getBoardHandle() {
         List<Board> list = boardRepository.findAll(Sort.by("id").descending());
+
         return ResponseEntity.status(200).body(list);
     }
 
