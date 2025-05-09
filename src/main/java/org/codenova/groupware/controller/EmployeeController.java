@@ -134,6 +134,12 @@ public class EmployeeController {
                 .build();
 
         messagingTemplate.convertAndSend("/public", employee.get().getId()+ " 가 로그인하였습니다.");
+
+//        if(employee.get().getId().equals(subject)){
+//
+//        }
+//        기능구현중
+
         return ResponseEntity.status(200).body(loginResult);
     }
 

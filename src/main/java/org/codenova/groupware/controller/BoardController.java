@@ -6,8 +6,11 @@ import org.codenova.groupware.entity.Board;
 import org.codenova.groupware.repository.BoardRepository;
 import org.codenova.groupware.repository.EmployeeRepository;
 import org.codenova.groupware.request.WriteBoard;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,10 +46,14 @@ public class BoardController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Board>> getBoardHandle() {
-        List<Board> list = boardRepository.findAll(Sort.by("id").descending());
+    public ResponseEntity<?> getBoards(@RequestParam(name="p") Optional<Integer> p) {
+        // List<Board> list = boardRepository.findAll(Sort.by("id").descending());
+        int pageNumber = p.orElse(1);
+        pageNumber = Math.max(pageNumber, 1);
+        Page<Board> boards = boardRepository.findAll(PageRequest.of(pageNumber-1, 5));  // 첫번째 인자가 페이지인덱스(0,, 두번째인자가 몇개씩 페이징 처리할껀지
 
-        return ResponseEntity.status(200).body(list);
+
+        return ResponseEntity.status(200).body(boards);
     }
 
     @GetMapping("/{id}")
