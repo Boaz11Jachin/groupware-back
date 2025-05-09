@@ -9,6 +9,7 @@ import org.codenova.groupware.repository.DepartmentRepository;
 import org.codenova.groupware.repository.EmployeeRepository;
 import org.codenova.groupware.request.AddChat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class ChatController {
     private final ChatRepository chatRepository;
     private final EmployeeRepository employeeRepository;
     private final DepartmentRepository departmentRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @PostMapping("/{departmentId}")
     public ResponseEntity<?> postChatHandle(@PathVariable Integer departmentId,
@@ -37,6 +39,8 @@ public class ChatController {
 
         chatRepository.save(chat);
 
+
+        messagingTemplate.convertAndSend("/chat-department/"+departmentId, "newChat");
         return ResponseEntity.status(201).body(chat);
     }
 

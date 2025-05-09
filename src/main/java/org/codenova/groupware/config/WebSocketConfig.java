@@ -18,6 +18,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-       registry.enableSimpleBroker("/public", "/private");
+       registry.enableSimpleBroker("/public", "/private", "/chat-department");
     }
 }
